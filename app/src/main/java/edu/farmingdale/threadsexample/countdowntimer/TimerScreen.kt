@@ -1,6 +1,7 @@
 package edu.farmingdale.threadsexample.countdowntimer
 
 import android.content.Context
+import android.media.MediaPlayer
 import android.util.Log
 import android.widget.NumberPicker
 import androidx.compose.animation.core.LinearEasing
@@ -27,11 +28,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
+import edu.farmingdale.threadsexample.R
 import java.text.DecimalFormat
 import java.util.Locale
 import kotlin.text.*
@@ -46,6 +49,35 @@ fun TimerScreen(
     // Get the current context
     val context = LocalContext.current
 
+    // Play sound when the timer reaches 0
+    //val mediaPlayer = remember { MediaPlayer.create(context, R.raw.timer_sound) }
+
+    // Calculate progress as a fraction of the total time
+    val progress = if (timerViewModel.totalMillis > 0) {
+        1f - (timerViewModel.remainingMillis / timerViewModel.totalMillis.toFloat())
+    } else {
+        0f
+    }
+
+    // Make text red and bold during the last 10 seconds
+    val textColor = if (timerViewModel.remainingMillis <= 10000) Color.Red else Color.Black
+    val textStyle = if (timerViewModel.remainingMillis <= 10000) FontWeight.Bold else FontWeight.Normal
+
+    // Reset the timer
+    fun resetTimer() {
+        timerViewModel.cancelTimer()
+        timerViewModel.selectTime(0, 0, 0)
+    }
+
+    // Handle the case when the timer reaches zero
+    LaunchedEffect(timerViewModel.remainingMillis) {
+        if (timerViewModel.remainingMillis <= 0 && !timerViewModel.isRunning) {
+            // Play sound when the timer reaches zero
+           // mediaPlayer.start()
+        }
+    }
+
+    // UI Layout
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
             modifier = modifier
@@ -53,13 +85,25 @@ fun TimerScreen(
                 .size(240.dp),
             contentAlignment = Alignment.Center
         ) {
-            // Display the remaining time while the timer is running
+            // Circular progress indicator while the timer is running
+            if (timerViewModel.isRunning) {
+                CircularProgressIndicator(
+                    progress = progress,
+                    modifier = Modifier.size(150.dp),
+                    strokeWidth = 8.dp
+                )
+            }
+
+            // Display the remaining time as text
             Text(
                 text = timerText(timerViewModel.remainingMillis),
-                fontSize = 60.sp,
+                fontSize = 50.sp,
+                color = textColor,
+                fontWeight = textStyle
             )
         }
 
+        // Time picker to select hours, minutes, and seconds
         TimePicker(
             hour = timerViewModel.selectedHour,
             min = timerViewModel.selectedMinute,
@@ -67,7 +111,7 @@ fun TimerScreen(
             onTimePick = timerViewModel::selectTime
         )
 
-        // Show the Cancel button if the timer is running
+        // Start/Cancel Button
         if (timerViewModel.isRunning) {
             Button(
                 onClick = timerViewModel::cancelTimer,
@@ -76,13 +120,11 @@ fun TimerScreen(
                 Text("Cancel")
             }
         } else {
-            // Enable the Start button only if a valid time is selected
             Button(
                 enabled = timerViewModel.selectedHour +
                         timerViewModel.selectedMinute +
                         timerViewModel.selectedSecond > 0,
                 onClick = {
-                    // Pass the context here
                     timerViewModel.startTimer(context)
                 },
                 modifier = modifier.padding(top = 50.dp)
@@ -90,18 +132,24 @@ fun TimerScreen(
                 Text("Start")
             }
         }
+
+        // Reset Button
+        Button(
+            onClick = { resetTimer() },
+            modifier = modifier.padding(top = 20.dp)
+        ) {
+            Text("Reset")
+        }
     }
 }
 
-// Function to format the remaining time in hh:mm:ss format
 fun timerText(timeInMillis: Long): String {
-    val duration: Duration = timeInMillis.milliseconds
+    val duration = timeInMillis.milliseconds
     return String.format(
         "%02d:%02d:%02d",
         duration.inWholeHours, duration.inWholeMinutes % 60, duration.inWholeSeconds % 60
     )
 }
-
 // Function to handle time picker UI
 @Composable
 fun TimePicker(
