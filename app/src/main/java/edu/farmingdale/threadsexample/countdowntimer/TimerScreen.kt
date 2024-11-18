@@ -50,7 +50,7 @@ fun TimerScreen(
     val context = LocalContext.current
 
     // Play sound when the timer reaches 0
-    //val mediaPlayer = remember { MediaPlayer.create(context, R.raw.timer_sound) }
+    val mediaPlayer = remember { MediaPlayer.create(context, R.raw.bell) }
 
     // Calculate progress as a fraction of the total time
     val progress = if (timerViewModel.totalMillis > 0) {
@@ -73,7 +73,7 @@ fun TimerScreen(
     LaunchedEffect(timerViewModel.remainingMillis) {
         if (timerViewModel.remainingMillis <= 0 && !timerViewModel.isRunning) {
             // Play sound when the timer reaches zero
-           // mediaPlayer.start()
+            mediaPlayer.start()
         }
     }
 
