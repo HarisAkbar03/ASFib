@@ -74,4 +74,11 @@ class TimerWorker(context: Context, parameters: WorkerParameters) :
 
         Log.d("TimerWorker", text)
     }
+
+    private fun timerText(remainingMillis: Long): String {
+        val hours = (remainingMillis / (1000 * 60 * 60)) % 24
+        val minutes = (remainingMillis / (1000 * 60)) % 60
+        val seconds = (remainingMillis / 1000) % 60
+        return String.format("%02d:%02d:%02d", hours, minutes, seconds)
+    }
 }
